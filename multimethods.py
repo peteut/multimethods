@@ -21,13 +21,15 @@ Default = DefaultMethod()
 class MultiMethod(object):
     instances = {}
 
+    def __new__(cls, name, dispatchfn):
+        if name in cls.instances:
+            return cls.instances[name]
+        else:
+            return object.__new__(cls, name, dispatchfn)
+
     def __init__(self, name, dispatchfn):
         if not callable(dispatchfn):
             raise TypeError('dispatchfn must be callable')
-
-        if name in self.__class__.instances:
-            raise Exception("A multimethod '%s' already exists, "
-                            "redeclaring it would wreak havoc" % name)
 
         self.dispatchfn = dispatchfn
         self.methods = {}
