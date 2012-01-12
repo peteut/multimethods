@@ -34,7 +34,6 @@ class MultiMethod(object):
         self.dispatchfn = dispatchfn
         self.methods = {}
         self.__name__ = name
-
         self.__class__.instances[name] = self
 
     def __call__(self, *args, **kwds):
@@ -71,10 +70,10 @@ def method(dispatchval, ns=None):
         The multimethod is determined by taking the method's name up to the last occurence
         of '__', e.g. function foo_bar__zig will become a method on the foo_bar multimethod.'''
 
-        identifier = '%s.%s' % (ns or func.__module__, func.__name__)
+        name = '%s.%s' % (ns or func.__module__, func.__name__)
 
         try:
-            multim = MultiMethod.instances[identifier]
+            multim = MultiMethod.instances[name]
         except KeyError:
             raise KeyError("Multimethod '%s' not found; it must exist before methods can be added")
 
