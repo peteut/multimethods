@@ -21,7 +21,9 @@ Default = DefaultMethod()
 class MultiMethod(object):
     instances = {}
 
-    def __init__(self, name, dispatchfn):
+    def __init__(self, name, dispatchfn, ns=None):
+        name = '%s.%s' % (ns or dispatchfn.__module__, name)
+
         if not callable(dispatchfn):
             raise TypeError('dispatchfn must be callable')
 
@@ -33,8 +35,7 @@ class MultiMethod(object):
         self.methods = {}
         self.__name__ = name
 
-        identifier = '%s.%s' % (dispatchfn.__module__, name)
-        self.__class__.instances[identifier] = self
+        self.__class__.instances[name] = self
 
     def __call__(self, *args, **kwds):
         dv = self.dispatchfn(*args, **kwds)
@@ -62,7 +63,7 @@ class MultiMethod(object):
         return "<MultiMethod '%s'>" % self.__name__
 
 
-def method(dispatchval):
+def method(dispatchval, ns=None):
     def method_decorator(func):
         '''Decorator which registers a function as a new method of a like-named multimethod,
         keyed by dispatchval.
@@ -70,7 +71,7 @@ def method(dispatchval):
         The multimethod is determined by taking the method's name up to the last occurence
         of '__', e.g. function foo_bar__zig will become a method on the foo_bar multimethod.'''
 
-        identifier = '%s.%s' % (func.__module__, func.__name__)
+        identifier = '%s.%s' % (ns or func.__module__, func.__name__)
 
         try:
             multim = MultiMethod.instances[identifier]
