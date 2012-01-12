@@ -33,7 +33,7 @@ class MultiMethod(object):
         self.methods = {}
         self.__name__ = name
 
-        identifier = '{0}.{1}'.format(dispatchfn.__module__, name)
+        identifier = '%s.%s' % (dispatchfn.__module__, name)
         self.__class__.instances[identifier] = self
 
     def __call__(self, *args, **kwds):
@@ -70,7 +70,7 @@ def method(dispatchval):
         The multimethod is determined by taking the method's name up to the last occurence
         of '__', e.g. function foo_bar__zig will become a method on the foo_bar multimethod.'''
 
-        identifier = '{0}.{1}'.format(func.__module__, func.__name__)
+        identifier = '%s.%s' % (func.__module__, func.__name__)
 
         try:
             multim = MultiMethod.instances[identifier]
