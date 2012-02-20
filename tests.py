@@ -4,30 +4,31 @@ from multimethods import MultiMethod, method
 
 
 class NamespaceTests(unittest.TestCase):
-    def test_definition(self):
-        MultiMethod('definition', lambda value: value)
-        assert MultiMethod.instances.get('tests.definition'), "namespace is not 'tests'"
+    def test_definition_ns_required(self):
+        self.assertRaises(TypeError, MultiMethod, 'definition', lambda value: value)
 
-    def test_installed_methods(self):
-        MultiMethod('installing', lambda value: value)
+    def test_decorator_ns_required(self):
+        MultiMethod('decorator', lambda value: value, ns='custom')
 
         try:
             @method(1)
+            def decorator(value):
+                pass
+        except TypeError:
+            pass
+        else:
+            self.fail('method decorator does not require namespace')
+
+    def test_definition(self):
+        MultiMethod('definition', lambda value: value, ns='custom')
+        assert MultiMethod.instances.get('custom.definition'), "namespace is not 'custom'"
+
+    def test_installed_methods(self):
+        MultiMethod('installing', lambda value: value, ns='custom')
+
+        try:
+            @method(1, ns='custom')
             def installing(value):
                 pass
         except KeyError:
             self.fail('not installing multimethods within namespace')
-
-    def test_overriding(self):
-        MultiMethod('overriding', lambda value: value, ns='overridden')
-        assert MultiMethod.instances.get('overridden.overriding'), 'namespace cannot be overridden'
-
-    def test_overriding_installed(self):
-        MultiMethod('installed.overriding', lambda value: value)
-
-        try:
-            @method(1)
-            def installing(value):
-                pass
-        except KeyError:
-            self.fail('namespace cannot be overridden for methods')
