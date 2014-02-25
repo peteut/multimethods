@@ -16,10 +16,15 @@ implementations of this function. It works similarly to the well-known concept
 of "instance methods" in OO languages like Python, which in a call to
 obj.method() would look up a member called "method" in obj's class.
 
-However, multimethod methods are NOT neccessarily associated with a single
-class. Instead, they belong to a `MultiMethod` instance. Calls on the MultiMethod
-will be dispatched to its corresponding methods using a custom, user-defined
-dispatch function.
+However, multimethod methods are NOT necessarily associated with a
+single class. Instead, they belong to a `MultiMethod` instance. Calls
+on the MultiMethod will be dispatched to its corresponding methods
+using a custom, user-defined dispatch function.  This is an important
+benefit - you can make Alice's class fulfill Bob's contract, and
+neither of them need to know about each other, or you. Extending a
+class is simple, but it runs the risk of naming
+collision. Multimethods are part of a module, so there is no chance of
+collision.
 
 The dispatch function can be any callable. Once a MultiMethod is called, the
 dispatch function will receive the exact arguments the MultiMethod call
@@ -84,7 +89,7 @@ method implementation::
 Thus, we are going to dispatch on a tuple of types, namely the types of our
 arguments. The next step is to instantiate the MultiMethod itself::
 
-    from multimethodic import MultiMethod, Default
+    from multimethod import MultiMethod, Default
     
     combine = MultiMethod('combine', dispatch_combine)
 
@@ -112,7 +117,7 @@ The behaviour for ints and strings is straightforward::
     'foo&bar'
 
 However, notice the last method definition above. Instead of specifying a tuple
-of types, we have given it the special `multimethodic.Default` object. This is
+of types, we have given it the special `multimethods.Default` object. This is
 a marker which simply tells the multimethod: "In case we don't have a method
 implementation for some dispatch value, just use this method instead." Let's
 test it::
@@ -135,27 +140,16 @@ at no additional cost, and makes it easy to re-use the dispatch function for
 other multimethods with different numbers of arguments.
 
 
-Caveat
-******
+Note
+****
 
-A small stumbling block remains when dispatching on argument type: Comparing
-dispatch values is done via `==`, not via `isinstance()`. This is best explained
-using the string-concatenating `combine()` implementation from above::
+When dispatch values are a tuple, the individual items in the tuple are checked the same as any other value.  For example a dispatch value of::
 
-    @combine.method((basestring, basestring))
-    def combine(x, y):
-        return x + '&' + y
-    
-    combine('foo', 'bar')   # BREAKS!
+    (int, int) 
 
-This fails because `type('foo')` returns `str`, not `basestring`. I haven't yet
-found a way to allow this to work, short of checking all dispatch values for
-`isinstance`-ness in linear time or adding special cases to the code. If you have
-an idea how to implement this, great -- please contact me or, better yet, send a
-pull request :-)
+will match a method of::
 
-At any rate, dispatching on argument type is not the end of the story.
-
+    (object, object)
 
 Example: Poor man's pattern matching
 ------------------------------------
@@ -166,7 +160,7 @@ cases can be modeled using simple pattern matching.
 
 ::
 
-    from multimethodic import MultiMethod, method, Default
+    from multimethods import MultiMethod, method, Default
 
     identity = lambda x: x
     len2 = MultiMethod('len2', identity)
@@ -190,7 +184,7 @@ this in code without resorting to heaps of `if` statements?
 
 ::
 
-    from multimethodic import MultiMethod, method, Default
+    from multimethods import MultiMethod, Default
 
     def sum_amounts(purchase):
         return sum(product.price for product in purchase)
