@@ -7,6 +7,8 @@ the Clojure programming language.
 
 Copyright (C) 2010-2011 by Daniel Werner.
 
+Improvements by Jeff Weiss and others.
+
 See the README file for information on usage and redistribution.
 '''
 import types
@@ -16,7 +18,9 @@ class DefaultMethod(object):
     def __repr__(self):
         return '<DefaultMethod>'
 
+
 Default = DefaultMethod()
+Anything = object()
 
 
 def _parents(x):
@@ -31,7 +35,7 @@ def _is_a(x, y):
 
     def both(a, b, typeslist):
         return isinstance(a, typeslist) and isinstance(b, typeslist)
-    if x == y:
+    if x == y or y is Anything:
         return True
     if both(x, y, (tuple)):
         return all(map(_is_a, x, y))
@@ -39,8 +43,12 @@ def _is_a(x, y):
         return both(x, y, (type, types.ClassType)) and issubclass(x, y)
 
 
-def type_dispatch(*args):
+def type_dispatch(*args, **kwargs):
     return tuple(type(x) for x in args)
+
+
+def single_type_dispatch(*args, **kwargs):
+    return type(args[0])
 
 
 class MultiMethod(object):
@@ -73,8 +81,8 @@ class MultiMethod(object):
         target = self.methods.get(Default, None)
         if target:
             return Default
-        raise Exception("No matching method on multimethod '%s' and "
-                        "no default method defined" % self.__name__)
+        raise Exception("No matching method on multimethod '%s' for '%s', and "
+                        "no default method defined" % (self.__name__, dv))
 
     def _dominates(self, x, y):
         return self._prefers(x, y) or _is_a(x, y)
@@ -120,28 +128,55 @@ class MultiMethod(object):
     def method(self, dispatchval):
         def method_decorator(func):
             self.addmethod(func, dispatchval)
-            # Return the multimethod itself
-            return self
+            return func
         return method_decorator
 
     def __repr__(self):
         return "<MultiMethod '%s'>" % self.__name__
 
 
-def multi(func):
-    '''Convenience decorator if you want to use the module and name of your dispatch
-    function as the descriptive name for the multimethod.
-    @multi
-    def mymulti(x, y):
-        return (type(x), type(y))
+def _name(f):
+    return "%s.%s" % (f.__module__, f.__name__)
 
-    If you want to use an existing dispatch function, you should just explicitly
-    create a MultiMethod object with your own descriptive name:
-    mymulti = MultiMethod('mymodule.mymulti', existing_dispatch_fn)
+
+def multimethod(dispatch_func):
+    '''Create a multimethod that dispatches on the given dispatch_func,
+    and uses the given default_func as the default dispatch.  The
+    multimethod's descriptive name will also be taken from the
+    default_func (its module and name).
 
     '''
-    name = "%s.%s" % (func.__module__, func.__name__)
-    return MultiMethod(name, func)
+    def multi_decorator(default_func):
+        m = MultiMethod(_name(default_func), dispatch_func)
+        m.addmethod(default_func, Default)
+        return m
+    return multi_decorator
 
 
-__all__ = ['MultiMethod', 'type_dispatch', 'multi', 'Default']
+def singledispatch(default_func):
+    '''Like python 3.4's singledispatch. Create a multimethod that
+    does single dispatch by the type of the first argument. The
+    wrapped function will be the default dispatch.
+    '''
+    name = "%s.%s" % (default_func.__module__, default_func.__name__)
+    m = MultiMethod(name, single_type_dispatch)
+    m.addmethod(default_func, Default)
+    m.__doc__ = default_func.__doc__
+    return m
+
+
+def multidispatch(default_func):
+    '''Create a multimethod that does multiple dispatch by the types of
+    all the arguments. The wrapped function will be the default
+    dispatch.
+
+    '''
+    name = "%s.%s" % (default_func.__module__, default_func.__name__)
+    m = MultiMethod(name, type_dispatch)
+    m.addmethod(default_func, Default)
+    m.__doc__ = default_func.__doc__
+    return m
+
+__all__ = ['MultiMethod', 'type_dispatch', 'single_type_dispatch',
+           'multimethod', 'Default', 'multidispatch', 'singledispatch',
+           'Anything']
