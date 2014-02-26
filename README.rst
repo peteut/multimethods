@@ -1,4 +1,4 @@
-multimethodic - Multimethods for Python
+multimethods.py - Multimethods for Python
 ======================================
 
 This module adds multimethod support to the Python programming language. In
@@ -89,7 +89,7 @@ method implementation::
 Thus, we are going to dispatch on a tuple of types, namely the types of our
 arguments. The next step is to instantiate the MultiMethod itself::
 
-    from multimethod import MultiMethod, Default
+    from multimethods import MultiMethod, Default
     
     combine = MultiMethod('combine', dispatch_combine)
 
@@ -236,6 +236,9 @@ macro-based syntax. I'd like to give credit to the principal author of
 Clojure, Rich Hickey, for coming up with the idea to generalize multimethods to
 use a custom dispatch function, and for publishing his implementation for the
 world to use (and port to different languages). Thanks, Rich!
+
+Thanks to Daniel Werner for the original implementation, tests, and
+this document - which I modified.
 
 Thanks to Matthew von Rocketstein for providing me with a setup.py, and to Eric
 Shull for raising the issue of proper namespacing and implementing a solution.

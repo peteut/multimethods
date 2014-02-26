@@ -57,11 +57,9 @@ class MultiMethod(object):
     def __call__(self, *args, **kwds):
         dv = self.dispatchfn(*args, **kwds)
         best = self.get_method(dv)
-        # print best
         return self.methods[best](*args, **kwds)
 
     def addmethod(self, func, dispatchval):
-        print dispatchval
         self.methods[dispatchval] = func
 
     def removemethod(self, dispatchval):
@@ -120,9 +118,7 @@ class MultiMethod(object):
         return self.methods
 
     def method(self, dispatchval):
-        print type(dispatchval)
         def method_decorator(func):
-            print dispatchval
             self.addmethod(func, dispatchval)
             # Return the multimethod itself
             return self
