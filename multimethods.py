@@ -20,7 +20,13 @@ class DefaultMethod(object):
 
 
 Default = DefaultMethod()
-Anything = object()
+
+
+class AnythingType(object):
+    def __repr__(self):
+        return '<Anything>'
+
+Anything = AnythingType()
 
 
 def _parents(x):
@@ -51,6 +57,10 @@ def single_type_dispatch(*args, **kwargs):
     return type(args[0])
 
 
+class DispatchException(Exception):
+    pass
+
+
 class MultiMethod(object):
 
     def __init__(self, name, dispatchfn):
@@ -71,7 +81,6 @@ class MultiMethod(object):
         self.methods[dispatchval] = func
 
     def removemethod(self, dispatchval):
-        del self.methods[dispatchval].multimethod
         del self.methods[dispatchval]
 
     def get_method(self, dv):
@@ -81,8 +90,8 @@ class MultiMethod(object):
         target = self.methods.get(Default, None)
         if target:
             return Default
-        raise Exception("No matching method on multimethod '%s' for '%s', and "
-                        "no default method defined" % (self.__name__, dv))
+        raise DispatchException("No matching method on multimethod '%s' for '%s', and "
+                                "no default method defined" % (self.__name__, dv))
 
     def _dominates(self, x, y):
         return self._prefers(x, y) or _is_a(x, y)
@@ -94,10 +103,14 @@ class MultiMethod(object):
                 if best is None or self._dominates(k, best):
                     best = k
                     # print best
-                if not self._dominates(best, k):
-                    raise Exception("Multiple methods in multimethod '%s'"
-                                    " match dispatch value %s -> %s and %s, and neither is"
-                                    " preferred" % (self.__name__, dv, k, best))
+                # raise if there's multiple matches and they don't point
+                # to the exact same method
+                if (not self._dominates(best, k)) and \
+                   (self.methods[best] is not self.methods[k]):
+                    print (best, k, dv)
+                    raise DispatchException("Multiple methods in multimethod '%s'"
+                                            " match dispatch value %s -> %s and %s, and neither is"
+                                            " preferred" % (self.__name__, dv, k, best))
         return best
 
     def _prefers(self, x, y):
@@ -158,8 +171,7 @@ def singledispatch(default_func):
     does single dispatch by the type of the first argument. The
     wrapped function will be the default dispatch.
     '''
-    name = "%s.%s" % (default_func.__module__, default_func.__name__)
-    m = MultiMethod(name, single_type_dispatch)
+    m = MultiMethod(_name(default_func), single_type_dispatch)
     m.addmethod(default_func, Default)
     m.__doc__ = default_func.__doc__
     return m
@@ -171,8 +183,7 @@ def multidispatch(default_func):
     dispatch.
 
     '''
-    name = "%s.%s" % (default_func.__module__, default_func.__name__)
-    m = MultiMethod(name, type_dispatch)
+    m = MultiMethod(_name(default_func), type_dispatch)
     m.addmethod(default_func, Default)
     m.__doc__ = default_func.__doc__
     return m
