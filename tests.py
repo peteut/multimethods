@@ -1,7 +1,7 @@
 import unittest
 from multimethods import (MultiMethod, Default, type_dispatch, DispatchException, Anything,
-                          singledispatch, multidispatch, multimethod)
-
+                          multimethod)
+from collections import Iterable
 identity = lambda x: x
 
 
@@ -134,43 +134,56 @@ class Dispatch(unittest.TestCase):
 
 class Prefer(unittest.TestCase):
 
-    bar = MultiMethod('bar', type_dispatch)
+    pref = MultiMethod('pref', type_dispatch)
 
-    @bar.method((object, str))
-    def barstr(x, y):
-        return "os " + str(x) + y
+    class MyList(list):
+        pass
 
-    @bar.method((str, object))
-    def barsrto(x, y):
-        return "so " + x + str(y)
-
-    @bar.method(Default)
-    def bardef(x, y):
+    @pref.method(Default)
+    def pd(x, y):
         return "default"
 
-    barpref = MultiMethod('barpref', type_dispatch)
+    @pref.method((Iterable, object))
+    def pio(x, y):
+        return "io"
 
-    @barpref.method((object, str))
-    def barstrp(x, y):
-        return "os " + str(x) + y
+    @pref.method((object, Iterable))
+    def poi(x, y):
+        return "oi"
 
-    @barpref.method((str, object))
-    def barsrtop(x, y):
-        return "so " + x + str(y)
+    @pref.method((list, object))
+    def plo(x, y):
+        return "lo"
 
-    @barpref.method(Default)
-    def bardefp(x, y):
-        return "default"
+    @pref.method((object, list))
+    def pol(x, y):
+        return "ol"
 
-    barpref.prefer((str, object), (object, str))
+    @pref.method((Iterable, list))
+    def pil(x, y):
+        return "il"
 
+    @pref.method((list, Iterable))
+    def pli(x, y):
+        return "li"
+
+    @pref.method((str, object))
+    def pso(x, y):
+        return "so"
+
+    @pref.method((object, str))
+    def pos(x, y):
+        return "os"
+
+    #pref.prefer((str, object), (object, str))
+    pref.prefer((object, Iterable), (Iterable, object))
+  
     def test_ambiguous(self):
-        self.assertEqual(self.bar(5, 6), "default")
-        self.assertRaises(DispatchException, self.bar, "sdf", "dgf")
+        self.assertEqual(self.pref(5, 6), "default")
+        self.assertRaises(DispatchException, self.pref, "sdf", "dgf")
 
-    def test_prefer(self):
-        self.assertEqual(self.barpref(5, 6), "default")
-        self.assertEqual(self.barpref("sdf", "dgf"), "so sdfdgf")
+    # def test_prefer(self):
+    #     self.assertEqual(self.pref(Prefer.MyList(), Prefer.MyList()), "lo")
 
     def test_prefer_not_needed_on_same_method(self):
         bar = MultiMethod('bar', type_dispatch)
@@ -187,6 +200,7 @@ class Prefer(unittest.TestCase):
         self.assertEqual(bar("sdf", "dgf"), "os sdfdgf")
         self.assertEqual(bar(3, 6), 5)
     
+
 def mylen(x):
     return len(x)
 
@@ -195,9 +209,11 @@ class Decorators(unittest.TestCase):
 
     @multimethod(mylen)
     def mm(x):
+        '''docstring'''
         return "default"
 
     def test_multimethod(self):
         self.assertEqual(self.mm.methods[Default].__name__, "mm")
         self.assertEqual(self.mm.dispatchfn, mylen)
+        self.assertEqual(self.mm.__doc__, "docstring")
         self.assertEqual(self.mm.__name__, "tests.mm")

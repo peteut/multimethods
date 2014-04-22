@@ -13,20 +13,21 @@ See the README file for information on usage and redistribution.
 '''
 import types
 
+# only if not already defined, prevents mismatch when reloading modules
+if not 'Default' in globals():
+    class DefaultMethod(object):
+        def __repr__(self):
+            return '<DefaultMethod>'
 
-class DefaultMethod(object):
-    def __repr__(self):
-        return '<DefaultMethod>'
+    Default = DefaultMethod()
 
 
-Default = DefaultMethod()
+if not 'Anything' in globals():
+    class AnythingType(object):
+        def __repr__(self):
+            return '<Anything>'
 
-
-class AnythingType(object):
-    def __repr__(self):
-        return '<Anything>'
-
-Anything = AnythingType()
+    Anything = AnythingType()
 
 
 def _parents(x):
@@ -129,7 +130,7 @@ class MultiMethod(object):
         if self._prefers(dispatchvalY, dispatchvalX):
             raise Exception("Preference conflict in multimethod '%s':"
                             " %s is already preferred to %s" %
-                            (self.name, dispatchvalY, dispatchvalX))
+                            (self.__name__, dispatchvalY, dispatchvalX))
         else:
             cur = self.preferences.get(dispatchvalX, set())
             cur.add(dispatchvalY)
@@ -162,6 +163,7 @@ def multimethod(dispatch_func):
     def multi_decorator(default_func):
         m = MultiMethod(_name(default_func), dispatch_func)
         m.addmethod(default_func, Default)
+        m.__doc__ = default_func.__doc__
         return m
     return multi_decorator
 
