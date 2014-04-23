@@ -153,6 +153,11 @@ def _name(f):
     return "%s.%s" % (f.__module__, f.__name__)
 
 
+def _copy_attrs(source, dest):
+    dest.__doc__ = source.__doc__
+    dest.__module__ = source.__module__
+
+
 def multimethod(dispatch_func):
     '''Create a multimethod that dispatches on the given dispatch_func,
     and uses the given default_func as the default dispatch.  The
@@ -163,7 +168,7 @@ def multimethod(dispatch_func):
     def multi_decorator(default_func):
         m = MultiMethod(_name(default_func), dispatch_func)
         m.addmethod(default_func, Default)
-        m.__doc__ = default_func.__doc__
+        _copy_attrs(default_func, m)
         return m
     return multi_decorator
 
@@ -175,7 +180,7 @@ def singledispatch(default_func):
     '''
     m = MultiMethod(_name(default_func), single_type_dispatch)
     m.addmethod(default_func, Default)
-    m.__doc__ = default_func.__doc__
+    _copy_attrs(default_func, m)
     return m
 
 
@@ -187,7 +192,7 @@ def multidispatch(default_func):
     '''
     m = MultiMethod(_name(default_func), type_dispatch)
     m.addmethod(default_func, Default)
-    m.__doc__ = default_func.__doc__
+    _copy_attrs(default_func, m)
     return m
 
 __all__ = ['MultiMethod', 'type_dispatch', 'single_type_dispatch',
