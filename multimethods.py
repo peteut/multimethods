@@ -34,22 +34,6 @@ def _parents(x):
     return (hasattr(x, '__bases__') and x.__bases__) or ()
 
 
-def _is_a(x, y):
-    '''Returns true if
-    x == y or  x is a subclass of y.
-    Works with tuples by calling _is_a on their corresponding elements.
-    '''
-
-    def both(a, b, typeslist):
-        return isinstance(a, typeslist) and isinstance(b, typeslist)
-    if x == y or y is Anything:
-        return True
-    if both(x, y, (tuple)):
-        return all(map(_is_a, x, y))
-    else:
-        return both(x, y, (type, types.ClassType)) and issubclass(x, y)
-
-
 def type_dispatch(*args, **kwargs):
     return tuple(type(x) for x in args)
 
@@ -100,15 +84,15 @@ class MultiMethod(object):
     def find_best_method(self, dv):
         best = None
         for k in self.methods:
+            if k is Default:
+                continue  # don't bother comparing with Default
             if _is_a(dv, k):
                 if best is None or self._dominates(k, best):
                     best = k
-                    # print best
                 # raise if there's multiple matches and they don't point
                 # to the exact same method
                 if (not self._dominates(best, k)) and \
                    (self.methods[best] is not self.methods[k]):
-                    print (best, k, dv)
                     raise DispatchException("Multiple methods in multimethod '%s'"
                                             " match dispatch value %s -> %s and %s, and neither is"
                                             " preferred" % (self.__name__, dv, k, best))
@@ -146,7 +130,7 @@ class MultiMethod(object):
         return method_decorator
 
     def __repr__(self):
-        return "<MultiMethod '%s'>" % self.__name__
+        return "<MultiMethod '%s'>" % _name(self)
 
 
 def _name(f):
@@ -166,7 +150,7 @@ def multimethod(dispatch_func):
 
     '''
     def multi_decorator(default_func):
-        m = MultiMethod(_name(default_func), dispatch_func)
+        m = MultiMethod(default_func.__name__, dispatch_func)
         m.addmethod(default_func, Default)
         _copy_attrs(default_func, m)
         return m
@@ -178,7 +162,7 @@ def singledispatch(default_func):
     does single dispatch by the type of the first argument. The
     wrapped function will be the default dispatch.
     '''
-    m = MultiMethod(_name(default_func), single_type_dispatch)
+    m = MultiMethod(default_func.__name__, single_type_dispatch)
     m.addmethod(default_func, Default)
     _copy_attrs(default_func, m)
     return m
@@ -190,10 +174,45 @@ def multidispatch(default_func):
     dispatch.
 
     '''
-    m = MultiMethod(_name(default_func), type_dispatch)
+    m = MultiMethod(default_func.__name__, type_dispatch)
     m.addmethod(default_func, Default)
     _copy_attrs(default_func, m)
     return m
+
+
+def _is_a(x, y):
+    '''Returns true if x == y or x is a subclass of y. Works with tuples
+       by calling _is_a on their corresponding elements.
+
+    '''
+    def both(a, b, typeslist):
+        return isinstance(a, typeslist) and isinstance(b, typeslist)
+    if both(x, y, (tuple)):
+        return all(map(_is_a, x, y))
+    else:
+        if both(x, y, (type, types.ClassType)):
+            return issubclass(x, y)
+        else:
+            return is_a(x, y)
+
+
+@multidispatch
+def is_a(x, y):
+    '''Returns true if x is a y.  By default, if x == y.
+
+    Since is_a is used internally by multimethods, and is itself a
+    multimethod, infinite recursion is possible *if* the dispatch
+    values cycle among two or more non-default is_a dispatches.
+
+    '''
+    return x == y
+
+
+@is_a.method((object, AnythingType))
+def _is_a_anything(x, y):
+    '''x is always an Anything'''
+    return True
+
 
 __all__ = ['MultiMethod', 'type_dispatch', 'single_type_dispatch',
            'multimethod', 'Default', 'multidispatch', 'singledispatch',

@@ -1,6 +1,6 @@
 import unittest
 from multimethods import (MultiMethod, Default, type_dispatch, DispatchException, Anything,
-                          multimethod)
+                          multimethod, is_a)
 from collections import Iterable
 identity = lambda x: x
 
@@ -177,7 +177,7 @@ class Prefer(unittest.TestCase):
 
     #pref.prefer((str, object), (object, str))
     pref.prefer((object, Iterable), (Iterable, object))
-  
+
     def test_ambiguous(self):
         self.assertEqual(self.pref(5, 6), "default")
         self.assertRaises(DispatchException, self.pref, "sdf", "dgf")
@@ -199,7 +199,7 @@ class Prefer(unittest.TestCase):
 
         self.assertEqual(bar("sdf", "dgf"), "os sdfdgf")
         self.assertEqual(bar(3, 6), 5)
-    
+
 
 def mylen(x):
     return len(x)
@@ -216,4 +216,45 @@ class Decorators(unittest.TestCase):
         self.assertEqual(self.mm.methods[Default].__name__, "mm")
         self.assertEqual(self.mm.dispatchfn, mylen)
         self.assertEqual(self.mm.__doc__, "docstring")
-        self.assertEqual(self.mm.__name__, "tests.mm")
+        self.assertEqual(self.mm.__name__, "mm")
+
+
+class IsA(unittest.TestCase):
+    class Version(object):
+        def __init__(self, version):
+            self.version = version
+
+        def __str__(self):
+            return "<Version %s>" % str(self.version)
+
+    something = MultiMethod('tests.isA.something', lambda v: IsA.Version(v))
+
+    @something.method(Version(25))
+    def something_25(foo):
+        return 25
+
+    @something.method(Version(30))
+    def something_30(foo):
+        return 30
+
+    @something.method(Version(15))
+    def something_15(foo):
+        return 15
+
+    @something.method(Version(5))
+    def something_5(foo):
+        return 5
+
+    @something.method(Default)
+    def default(foo):
+        return 0
+
+    @is_a.method((Version, Version))
+    def _is_a_version(x, y):
+        return x.version >= y.version
+
+    def test_is_a(self):
+        self.assertEqual(self.something(31), 30)
+        self.assertEqual(self.something(6), 5)
+        self.assertEqual(self.something(-10), 0)
+        self.assertEqual(self.something(25), 25)
