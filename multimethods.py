@@ -62,10 +62,10 @@ class MultiMethod(object):
         best = self.get_method(dv)
         return self.methods[best](*args, **kwds)
 
-    def addmethod(self, func, dispatchval):
+    def add_method(self, dispatchval, func):
         self.methods[dispatchval] = func
 
-    def removemethod(self, dispatchval):
+    def remove_method(self, dispatchval):
         del self.methods[dispatchval]
 
     def get_method(self, dv):
@@ -125,7 +125,7 @@ class MultiMethod(object):
 
     def method(self, dispatchval):
         def method_decorator(func):
-            self.addmethod(func, dispatchval)
+            self.add_method(dispatchval, func)
             return func
         return method_decorator
 
@@ -151,7 +151,7 @@ def multimethod(dispatch_func):
     '''
     def multi_decorator(default_func):
         m = MultiMethod(default_func.__name__, dispatch_func)
-        m.addmethod(default_func, Default)
+        m.add_method(Default, default_func)
         _copy_attrs(default_func, m)
         return m
     return multi_decorator
@@ -163,7 +163,7 @@ def singledispatch(default_func):
     wrapped function will be the default dispatch.
     '''
     m = MultiMethod(default_func.__name__, single_type_dispatch)
-    m.addmethod(default_func, Default)
+    m.add_method(Default, default_func)
     _copy_attrs(default_func, m)
     return m
 
@@ -175,7 +175,7 @@ def multidispatch(default_func):
 
     '''
     m = MultiMethod(default_func.__name__, type_dispatch)
-    m.addmethod(default_func, Default)
+    m.add_method(Default, default_func)
     _copy_attrs(default_func, m)
     return m
 

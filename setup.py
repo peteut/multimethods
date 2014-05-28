@@ -6,7 +6,7 @@ from distutils.core import setup
 
 setup(
     name         = 'multimethods.py',
-    version      = '0.3.0',
+    version      = '0.4.0',
     description  = 'updated Clojure-style multimethods for Python',
     author       = 'Jeff Weiss',
     author_email = 'me@jweiss.com',

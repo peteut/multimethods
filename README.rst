@@ -1,5 +1,5 @@
 multimethods.py - Multimethods for Python
-======================================
+=========================================
 
 This module adds multimethod support to the Python programming language. In
 contrast to other multiple dispatch implementations, this one doesn't strictly
@@ -17,7 +17,7 @@ of "instance methods" in OO languages like Python, which in a call to
 obj.method() would look up a member called "method" in obj's class.
 
 However, multimethod methods are NOT necessarily associated with a
-single class. Instead, they belong to a `MultiMethod` instance. Calls
+single class. Instead, they belong to a ``MultiMethod`` instance. Calls
 on the MultiMethod will be dispatched to its corresponding methods
 using a custom, user-defined dispatch function.  This is an important
 benefit - you can make Alice's class fulfill Bob's contract, and
@@ -31,7 +31,7 @@ dispatch function will receive the exact arguments the MultiMethod call
 received, and is expected to return a value that will be dispatched on. This
 return value is then used to select a 'method', which is basically just
 a function that has been associated with this multimethod and dispatch value
-using the multimethod's `@method` decorator.
+using the multimethod's ``@method`` decorator.
 
 Note that in the dispatch function lies the real power of this whole concept.
 For example, you can use it to dispatch on the type of the arguments like in
@@ -48,11 +48,11 @@ but your creativity is the only limit to what you can do.
 How to use multimethods
 -----------------------
 
-To use multimethods, a `MultiMethod` instance must be created first. Each
+To use multimethods, a ``MultiMethod`` instance must be created first. Each
 MultiMethod instance takes a name and a dispatch function, as discussed above.
 
 Methods are associated with MultiMethods by decorating a function using the
-`@method` decorator, which is an attribute of the multimethod itself. This
+``@method`` decorator, which is an attribute of the multimethod itself. This
 decorator registers the function for a dispatch value so that whenever the
 MultiMethod is called and its dispatch function returns this value, the
 decorated function will be selected.
@@ -77,7 +77,7 @@ behaviours based on a the types of the arguments could look like this::
 However, this is ugly and becomes unwieldy fast as we add more elif cases for
 additional types. Fortunately, implementing dispatch on function arguments'
 types is easy using multimethodic. Let's implement a multimethod version of
-`combine()` with exactly the same signature.
+``combine()`` with exactly the same signature.
 
 First, we have to define a dispatch function. It will take the same arguments
 as the multimethod, and return a value which is then used to select the correct
@@ -98,15 +98,15 @@ methods in order to implement its functionality for different dispatch values.
 Let's define methods for all-integer and all-string cases as above::
 
     @combine.method((int, int))
-    def combine(x, y):
+    def _combine_int(x, y):
         return x * y
     
     @combine.method((str, str))
-    def combine(x, y):
+    def _combine_str(x, y):
         return x + '&' + y
     
     @combine.method(Default)
-    def combine(x, y):
+    def _combine(x, y):
         return '???'
 
 The behaviour for ints and strings is straightforward::
@@ -117,7 +117,7 @@ The behaviour for ints and strings is straightforward::
     'foo&bar'
 
 However, notice the last method definition above. Instead of specifying a tuple
-of types, we have given it the special `multimethods.Default` object. This is
+of types, we have given it the special ``multimethods.Default`` object. This is
 a marker which simply tells the multimethod: "In case we don't have a method
 implementation for some dispatch value, just use this method instead." Let's
 test it::
@@ -126,7 +126,7 @@ test it::
   '???'
 
 Default methods are completely optional, you are free not to provide one at
-all. An `Exception` will be raised for unknown dispatch values instead.
+all. A ``DispatchException`` will be raised for unknown dispatch values instead.
 
 Now would be a good time to show that the dispatch function's signature doesn't
 have to match its methods' signature bit-by-bit. Let's make the dispatch
@@ -139,17 +139,6 @@ This version will support all possible (non-variadic, non-keyword) signatures
 at no additional cost, and makes it easy to re-use the dispatch function for
 other multimethods with different numbers of arguments.
 
-
-Note
-****
-
-When dispatch values are a tuple, the individual items in the tuple are checked the same as any other value.  For example a dispatch value of::
-
-    (int, int) 
-
-will match a method of::
-
-    (object, object)
 
 Example: Poor man's pattern matching
 ------------------------------------
@@ -166,11 +155,11 @@ cases can be modeled using simple pattern matching.
     len2 = MultiMethod('len2', identity)
 
     @len2.method([])
-    def len2(l):
+    def _len2(l):
         return 0
 
     @len2.method(Default)
-    def len2(l):
+    def _len2d(l):
         return 1 + len2(l[1:])
 
 
@@ -180,7 +169,7 @@ Example: Special procedures for special customers
 Here's a slightly more involved example. Let's say ACME Corporation has
 standard billing procedures that apply to most of its customers, but some of
 the bigger customers receive wildly different conditions. How do we express
-this in code without resorting to heaps of `if` statements?
+this in code without resorting to heaps of ``if`` statements?
 
 ::
 
@@ -196,21 +185,73 @@ this in code without resorting to heaps of `if` statements?
     method = calc_total.method
 
     @method(Default)
-    def calc_total(purchase):
+    def _calc_total(purchase):
         # Normal customer pricing
         return sum_amounts(purchase)
 
     @method("Wile E.")
-    def calc_total(purchase):
+    def _calc_total_we(purchase):
         # Always gets 20% off
         return sum_amounts(purchase) * 0.8
 
     @method("Wolfram & Hart")
-    def calc_total(purchase):
+    def _calc_total_wh(purchase):
         # Has already paid an annual flat fee in advance; also receives
         # a token of enduring friendship with every order
         purchase.append(champagne)
         return 0.0
+
+
+'Is A' based matching
+---------------------
+
+The way multimethods determine if one dispatch value 'matches' another is through a function called ``is_a``.  For example, you are already familiar with how ``is_a`` works with types - str 'is a' object, list 'is a' Sequence, Ford 'is a' Automobile, etc.  For types, ``is_a`` just decides if one is a subclass of the other.   
+
+You can extend this behavior because ``is_a`` is itself a multimethod!  So if you want to create relationships for other values besides types, you can.  
+
+For example, if you want to dispatch on version numbers, you can define one Version ``is_a`` other Version if the former Version number is greater::
+
+    from multimethods import is_a
+    
+    class Version(object): 
+        def __init__(self, ver):
+             self.ver = ver
+
+    @is_a.method((Version, Version))
+    def _is_version(a, b):
+        return a.ver > b.ver
+
+    
+Now your dispatch values can be instances of ``Version``.  So for example::
+
+    from multimethods import MultiMethod
+    
+    v1 = Version(1)
+    v5 = Version(5)
+
+    foo = MultiMethod("foo", lambda x: get_current_version())
+ 
+    @foo.method(v1)
+    def _foo1(x):
+       print "do this for v1 and greater"
+
+    @foo.method(v5)
+    def _foo5(x):
+       print "do this for v5 and greater"
+
+    foo("hi")  # if current version is 2, dispatches to v1.
+
+
+Note
+****
+
+Tuples are treated specially as dispatch values.  All the individual items are compared using ``is_a``, and only matches if all the individual values match.  For example a dispatch value of::
+
+    (int, int) 
+
+will match a method of::
+
+    (object, object)
 
 
 Author & License
@@ -238,7 +279,7 @@ use a custom dispatch function, and for publishing his implementation for the
 world to use (and port to different languages). Thanks, Rich!
 
 Thanks to Daniel Werner for the original implementation, tests, and
-this document - which I modified.
+this document - modifications by Jeff Weiss.
 
 Thanks to Matthew von Rocketstein for providing me with a setup.py, and to Eric
 Shull for raising the issue of proper namespacing and implementing a solution.

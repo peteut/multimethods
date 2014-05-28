@@ -32,9 +32,9 @@ class Basic(unittest.TestCase):
     def test_addmethod(self):
         foomethod = MultiMethod('foomethod', identity)
 
-        foomethod.addmethod(lambda x: "The Answer", 42)
-        foomethod.addmethod(lambda x: "2^10", 1024)
-        foomethod.addmethod(lambda x: "Nothing", Default)
+        foomethod.add_method(42, lambda x: "The Answer")
+        foomethod.add_method(1024, lambda x: "2^10")
+        foomethod.add_method(Default, lambda x: "Nothing")
 
         self.assertEqual(foomethod(42), "The Answer")
         self.assertEqual(foomethod(1024), "2^10")
@@ -49,7 +49,7 @@ class Basic(unittest.TestCase):
 
         self.assertEqual(barmethod(1), 123)
 
-        barmethod.removemethod(1)
+        barmethod.remove_method(1)
         self.assertRaises(Exception, lambda: barmethod(1))
 
         @barmethod.method(Default)
@@ -59,7 +59,7 @@ class Basic(unittest.TestCase):
         self.assertEqual(barmethod("whatever"), 42)
         self.assertEqual(barmethod("something"), 42)
 
-        barmethod.removemethod(Default)
+        barmethod.remove_method(Default)
         self.assertRaises(Exception, lambda: barmethod("whatever"))
         self.assertRaises(Exception, lambda: barmethod(1))
 
