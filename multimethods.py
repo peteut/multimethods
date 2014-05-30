@@ -70,24 +70,22 @@ class MultiMethod(object):
 
     def get_method(self, dv):
         target = self.find_best_method(dv)
-        if target:
+        if target is not Default or target in self.methods:
             return target
-        target = self.methods.get(Default, None)
-        if target:
-            return Default
-        raise DispatchException("No matching method on multimethod '%s' for '%s', and "
-                                "no default method defined" % (self.__name__, dv))
+        else:
+            raise DispatchException("No matching method on multimethod '%s' for '%s', and "
+                                    "no default method defined" % (self.__name__, dv))
 
     def _dominates(self, x, y):
         return self._prefers(x, y) or _is_a(x, y)
 
     def find_best_method(self, dv):
-        best = None
+        best = Default
         for k in self.methods:
             if k is Default:
                 continue  # don't bother comparing with Default
             if _is_a(dv, k):
-                if best is None or self._dominates(k, best):
+                if best is Default or self._dominates(k, best):
                     best = k
                 # raise if there's multiple matches and they don't point
                 # to the exact same method

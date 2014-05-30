@@ -17,6 +17,10 @@ class Basic(unittest.TestCase):
         def _speaksum5(x, y):
             return "Five"
 
+        @speaksum.method(0)
+        def _speaksum0(x, y):
+            return "Zero"
+
         @speaksum.method(Default)
         def _speaksum_d(x, y, z):
             return "Another"
@@ -25,6 +29,7 @@ class Basic(unittest.TestCase):
         self.assertEqual(speaksum(3, 2), "Five")
         self.assertEqual(speaksum(9, 8, 2), "Another")
         self.assertEqual(speaksum(3, 5, 6), "Another")
+        self.assertEqual(speaksum(-1, 1), "Zero")
 
         # Too many arguments to method
         self.assertRaises(TypeError, lambda: speaksum(2, 3, 0, 0, 0))
@@ -78,6 +83,21 @@ class Basic(unittest.TestCase):
 
         self.assertEqual(foobar1(1), "foobar1")
         self.assertEqual(foobar2(2), "foobar2")
+
+    def test_falsey_values(self):
+        foobar3 = MultiMethod('foobar3', identity)
+
+        @foobar3.method(0)
+        def foobar30(x):
+            return "zero"
+
+        @foobar3.method(None)
+        def foobar3n(x):
+            return "none"
+
+        self.assertEqual(foobar3(0), "zero")
+        self.assertEqual(foobar3(False), "zero")  # in python False == 0
+        self.assertEqual(foobar3(None), "none")
 
 
 class Item(object):
