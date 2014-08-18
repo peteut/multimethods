@@ -14,7 +14,7 @@ See the README file for information on usage and redistribution.
 import types
 
 # only if not already defined, prevents mismatch when reloading modules
-if not 'Default' in globals():
+if 'Default' not in globals():
     class DefaultMethod(object):
         def __repr__(self):
             return '<DefaultMethod>'
@@ -22,7 +22,7 @@ if not 'Default' in globals():
     Default = DefaultMethod()
 
 
-if not 'Anything' in globals():
+if 'Anything' not in globals():
     class AnythingType(object):
         def __repr__(self):
             return '<Anything>'
@@ -55,26 +55,40 @@ class MultiMethod(object):
         self.dispatchfn = dispatchfn
         self.methods = {}
         self.preferences = {}
+        self.cache = {}
         self.__name__ = name
+        # self.cache_hites
 
     def __call__(self, *args, **kwds):
         dv = self.dispatchfn(*args, **kwds)
         best = self.get_method(dv)
-        return self.methods[best](*args, **kwds)
+        return best(*args, **kwds)
 
     def add_method(self, dispatchval, func):
         self.methods[dispatchval] = func
+        self._reset_cache()
 
     def remove_method(self, dispatchval):
         del self.methods[dispatchval]
+        self._reset_cache()
 
     def get_method(self, dv):
-        target = self.find_best_method(dv)
-        if target is not Default or target in self.methods:
+        target = self.cache.get(dv, None)
+        if target:
+            return target
+        k = self.find_best_method(dv)
+        if k is not Default or k in self.methods:
+            target = self.methods[k]
+            self.cache[dv] = target
+            return target
+        if target:
             return target
         else:
             raise DispatchException("No matching method on multimethod '%s' for '%s', and "
                                     "no default method defined" % (self.__name__, dv))
+
+    def _reset_cache(self):
+        self.cache = self.methods.copy()
 
     def _dominates(self, x, y):
         return self._prefers(x, y) or _is_a(x, y)
@@ -94,6 +108,9 @@ class MultiMethod(object):
                     raise DispatchException("Multiple methods in multimethod '%s'"
                                             " match dispatch value %s -> %s and %s, and neither is"
                                             " preferred" % (self.__name__, dv, k, best))
+        # self.cache[dv] = best
+        # print self.cache
+        # print self.methods
         return best
 
     def _prefers(self, x, y):
@@ -117,9 +134,7 @@ class MultiMethod(object):
             cur = self.preferences.get(dispatchvalX, set())
             cur.add(dispatchvalY)
             self.preferences[dispatchvalX] = cur
-
-    def methods(self):
-        return self.methods
+            self._reset_cache()
 
     def method(self, dispatchval):
         def method_decorator(func):

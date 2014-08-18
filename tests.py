@@ -142,6 +142,8 @@ class Dispatch(unittest.TestCase):
     def default(name, item):
         return 0
 
+    myitem = BoxedItem()
+
     def test_hierarchy(self):
         self.assertEqual(self.discount("steve", ExpensiveItem()), 25)
         self.assertEqual(self.discount("chrisjones", ExpensiveItem()), 30)
@@ -150,6 +152,11 @@ class Dispatch(unittest.TestCase):
 
     def test_anything(self):
         self.assertEqual(self.discount("joe", ExpensiveItem()), 15)
+
+    def test_cache(self):
+        self.assertEqual(self.discount("steve", self.myitem), 5)
+        #self.assertEqual(self.discount("myverylongname", self.myitem), 30)
+        self.assertIn((5, BoxedItem), self.discount.cache)
 
 
 class Prefer(unittest.TestCase):
