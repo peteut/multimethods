@@ -11,7 +11,14 @@ Improvements by Jeff Weiss and others.
 
 See the README file for information on usage and redistribution.
 '''
-import types
+
+import sys
+py_major_version = sys.version_info[0]
+if py_major_version >= 3:
+    _type_classes = (type,)
+else:
+    import types
+    _type_class = (type, types.ClassType)
 
 # only if not already defined, prevents mismatch when reloading modules
 if 'Default' not in globals():
@@ -203,7 +210,7 @@ def _is_a(x, y):
     if both(x, y, (tuple)):
         return all(map(_is_a, x, y))
     else:
-        if both(x, y, (type, types.ClassType)):
+        if both(x, y, _type_classes):
             return issubclass(x, y)
         else:
             return is_a(x, y)
