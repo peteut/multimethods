@@ -18,7 +18,7 @@ if py_major_version >= 3:
     _type_classes = (type,)
 else:
     import types
-    _type_class = (type, types.ClassType)
+    _type_classes = (type, types.ClassType)
 
 # only if not already defined, prevents mismatch when reloading modules
 if 'Default' not in globals():
