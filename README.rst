@@ -64,7 +64,9 @@ Example: Dispatch on Argument Type
 ----------------------------------
 
 Without multimethods, naively implementing a function that has two different
-behaviours based on a the types of the arguments could look like this::
+behaviours based on a the types of the arguments could look like this
+
+.. code:: python
 
   def combine(x, y):
       if isinstance(x, int) and isinstance(y, int):
@@ -81,35 +83,43 @@ types is easy using multimethodic. Let's implement a multimethod version of
 
 First, we have to define a dispatch function. It will take the same arguments
 as the multimethod, and return a value which is then used to select the correct
-method implementation::
+method implementation
+
+.. code:: python
 
     def dispatch_combine(x, y):
         return (type(x), type(y))
 
 Thus, we are going to dispatch on a tuple of types, namely the types of our
-arguments. The next step is to instantiate the MultiMethod itself::
+arguments. The next step is to instantiate the MultiMethod itself
+
+.. code:: python
 
     from multimethods import MultiMethod, Default
-    
+
     combine = MultiMethod('combine', dispatch_combine)
 
 A multimethod by itself does almost nothing. It is dependent on being given
 methods in order to implement its functionality for different dispatch values.
-Let's define methods for all-integer and all-string cases as above::
+Let's define methods for all-integer and all-string cases as above
+
+.. code:: python
 
     @combine.method((int, int))
     def _combine_int(x, y):
         return x * y
-    
+
     @combine.method((str, str))
     def _combine_str(x, y):
         return x + '&' + y
-    
+
     @combine.method(Default)
     def _combine(x, y):
         return '???'
 
-The behaviour for ints and strings is straightforward::
+The behaviour for ints and strings is straightforward
+
+.. code:: python
 
     >>> combine(21, 2)
     42
@@ -120,7 +130,9 @@ However, notice the last method definition above. Instead of specifying a tuple
 of types, we have given it the special ``multimethods.Default`` object. This is
 a marker which simply tells the multimethod: "In case we don't have a method
 implementation for some dispatch value, just use this method instead." Let's
-test it::
+test it
+
+.. code:: python
 
   >>> combine(21, 'bar')
   '???'
@@ -130,7 +142,9 @@ all. A ``DispatchException`` will be raised for unknown dispatch values instead.
 
 Now would be a good time to show that the dispatch function's signature doesn't
 have to match its methods' signature bit-by-bit. Let's make the dispatch
-function more generic::
+function more generic
+
+.. code:: python
 
     def dispatch_on_arg_type(*args):
         return tuple(type(x) for x in args)
@@ -147,9 +161,9 @@ What follows is a horribly inefficient algorithm to determine a list's length.
 It is often used as an example to teach basic recursion, and also shows how edge
 cases can be modeled using simple pattern matching.
 
-::
+.. code:: python
 
-    from multimethods import MultiMethod, method, Default
+    from multimethods import MultiMethod, Default
 
     identity = lambda x: x
     len2 = MultiMethod('len2', identity)
@@ -171,7 +185,7 @@ standard billing procedures that apply to most of its customers, but some of
 the bigger customers receive wildly different conditions. How do we express
 this in code without resorting to heaps of ``if`` statements?
 
-::
+.. code:: python
 
     from multimethods import MultiMethod, Default
 
@@ -205,15 +219,17 @@ this in code without resorting to heaps of ``if`` statements?
 'Is A' based matching
 ---------------------
 
-The way multimethods determine if one dispatch value 'matches' another is through a function called ``is_a``.  For example, you are already familiar with how ``is_a`` works with types - str 'is a' object, list 'is a' Sequence, Ford 'is a' Automobile, etc.  For types, ``is_a`` just decides if one is a subclass of the other.   
+The way multimethods determine if one dispatch value 'matches' another is through a function called ``is_a``.  For example, you are already familiar with how ``is_a`` works with types - str 'is a' object, list 'is a' Sequence, Ford 'is a' Automobile, etc.  For types, ``is_a`` just decides if one is a subclass of the other.
 
-You can extend this behavior because ``is_a`` is itself a multimethod!  So if you want to create relationships for other values besides types, you can.  
+You can extend this behavior because ``is_a`` is itself a multimethod!  So if you want to create relationships for other values besides types, you can.
 
-For example, if you want to dispatch on version numbers, you can define one Version ``is_a`` other Version if the former Version number is greater::
+For example, if you want to dispatch on version numbers, you can define one Version ``is_a`` other Version if the former Version number is greater
+
+.. code:: python
 
     from multimethods import is_a
-    
-    class Version(object): 
+
+    class Version(object):
         def __init__(self, ver):
              self.ver = ver
 
@@ -221,16 +237,18 @@ For example, if you want to dispatch on version numbers, you can define one Vers
     def _is_version(a, b):
         return a.ver > b.ver
 
-    
-Now your dispatch values can be instances of ``Version``.  So for example::
+
+Now your dispatch values can be instances of ``Version``.  So for example
+
+.. code:: python
 
     from multimethods import MultiMethod
-    
+
     v1 = Version(1)
     v5 = Version(5)
 
     foo = MultiMethod("foo", lambda x: get_current_version())
- 
+
     @foo.method(v1)
     def _foo1(x):
        print "do this for v1 and greater"
@@ -245,11 +263,15 @@ Now your dispatch values can be instances of ``Version``.  So for example::
 Note
 ****
 
-Tuples are treated specially as dispatch values.  All the individual items are compared using ``is_a``, and only matches if all the individual values match.  For example a dispatch value of::
+Tuples are treated specially as dispatch values.  All the individual items are compared using ``is_a``, and only matches if all the individual values match.  For example a dispatch value of
 
-    (int, int) 
+.. code:: python
 
-will match a method of::
+    (int, int)
+
+will match a method of
+
+.. code:: python
 
     (object, object)
 
