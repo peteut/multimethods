@@ -1,0 +1,50 @@
+.job_template: &toxenv
+    stage: test
+    script:
+        - python tests.py
+    tags:
+        - docker
+
+test:py34:
+    image: python:3.4
+    variables:
+        TOXENV: py34
+    <<: *toxenv
+test:py35:
+    image: python:3.5
+    variables:
+        TOXENV: py35
+    <<: *toxenv
+
+build:
+    image: python:3.5
+    stage: build
+    before_script:
+        - pip install wheel
+    script:
+        - pip wheel -w wheelhouse .
+        - ls -lh wheelhouse/
+    artifacts:
+        untracked: true
+        paths:
+            - wheelhouse/
+    tags:
+        - docker
+
+devpi:staging:
+    image: python:3.5
+    stage: deploy
+    only:
+        - master
+    script:
+        - pip install devpi-client
+        - devpi use $DEVPI_URL
+        - devpi login $DEVPI_USER --password $DEVPI_PASSWORD
+        - devpi use staging
+        - devpi upload --no-vcs
+        - ls -lh wheelhouse/
+        - devpi upload --no-vcs --from-dir wheelhouse
+    dependencies:
+        - build
+    tags:
+        - docker
